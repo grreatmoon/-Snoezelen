@@ -30,6 +30,9 @@ bool buttonState = HIGH;      //チャタリング防止後の確定したボタ
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 50;
 
+//test
+int count_D = 0;
+
 void modeA() {
   for(int i = 0;i < NUM_LEDS;i++) {
     leds[i] = CRGB::Black;
@@ -80,6 +83,7 @@ void modeC() {
 
 
 void modeD() {
+
   if(origin >= NUM_LEDS){
     direction = -1;
     fixedColor = random(255);
@@ -94,7 +98,11 @@ void modeD() {
     leds[i] = CHSV(1,1,0);
     }
   }
-  origin += direction;
+  if(++count_D % 2 == 0){
+    origin += direction;
+  }
+  
+  //ここにdelay入れたら遅くなる?
   FastLED.show();
 
 }
@@ -171,6 +179,8 @@ void loop() {
     brightness = 0;
     Serial.print("Mode changed to:");
     Serial.println(currentMode);
+    
+    //確認用の青LED?→消してもよし?(要確認)
     if(currentMode % 2 == 0){
       digitalWrite(CONFIRMLED, HIGH);
     }else{

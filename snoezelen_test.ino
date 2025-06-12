@@ -25,13 +25,18 @@ int invertBrightness = 205;
 int count = 0;
 int fadeAmountE = 5;
 int defaultBrightness = 155;
-//For button
-bool lastButtonState = HIGH;  //直前のボタンのそのままの読み取り結果
-bool buttonState = HIGH;      //チャタリング防止後の確定したボタンの状態
-unsigned long lastDebounceTime = 0;
+
+//Buttonチャタリング防止用
+// bool lastButtonState = HIGH;  //直前のボタンのそのままの読み取り結果
+// bool buttonState = HIGH;      //チャタリング防止後の確定したボタンの状態
 const unsigned long debounceDelay = 50;
 
-//test
+//先生_生徒用ボタンの値読み取り
+bool button_State_ST = HIGH;
+bool button_State_TH_A = HIGH;
+bool button_State_TH_B = HIGH;
+
+//ModeD用
 int count_D = 0;
 
 void modeA() {
@@ -138,12 +143,13 @@ void modeE() {
 
 
 
-bool checkButtonPress(int buttonPin) {
+bool checkButtonPress(bool buttonState,int buttonPin) {
+  unsigned long lastDebounceTime = 0;
   bool buttonPressed = false;
   int reading = digitalRead(buttonPin);
 
   //チャタリング防止
-  if (reading != lastButtonState) {
+  if (reading != buttonState) {
     lastDebounceTime = millis();  
   }
 
@@ -156,7 +162,7 @@ bool checkButtonPress(int buttonPin) {
     }
   }
 
-  lastButtonState = reading;
+  buttonState = reading;
   return buttonPressed;
 }
 
@@ -175,12 +181,17 @@ void setup() {
 }
 
 void loop() {
-  if (checkButtonPress()) {
+  if (checkButtonPress(button_State_TH_A, BUTTON_PIN_TH_A)) { //先生用ボタンAが押されたら...
     currentMode = (currentMode + 1) % 5;
     brightness = 0;
     Serial.print("Mode changed to:");
     Serial.println(currentMode);
-    
+  }
+  //先生用Bボタンはチャタリング防止機能いらない→後日削除
+  if(digitalRead(BUTTON_PIN_TH_B)) { //先生用ボタンBがHIGHかLOWか検出
+    // 生徒用Cボタンの処理(BがHIGHの時)
+  }else{
+    // 生徒用Cボタンの処理(BがLOWの時)
   }
 
   switch (currentMode) {

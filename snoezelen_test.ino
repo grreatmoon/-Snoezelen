@@ -25,6 +25,7 @@ int invertBrightness = 205;
 int count = 0;
 int fadeAmountE = 5;
 int defaultBrightness = 155;
+int count_ST = 0; //生徒用ボタンのカウント(BがHighの時使う)
 
 //Buttonチャタリング防止用
 // bool lastButtonState = HIGH;  //直前のボタンのそのままの読み取り結果
@@ -34,7 +35,7 @@ const unsigned long debounceDelay = 50;
 //先生_生徒用ボタンの値読み取り
 bool button_State_ST = HIGH;
 bool button_State_TH_A = HIGH;
-bool button_State_TH_B = HIGH;
+bool button_State_TH_C = HIGH;
 
 //ModeD用
 int count_D = 0;
@@ -181,40 +182,65 @@ void setup() {
 }
 
 void loop() {
-  if (checkButtonPress(button_State_TH_A, BUTTON_PIN_TH_A)) { //先生用ボタンAが押されたら...
+  if (checkButtonPress(button_State_TH_A, BUTTON_PIN_TH_A)) { //先生用ボタンAが押され→mode変更
     currentMode = (currentMode + 1) % 5;
     brightness = 0;
     Serial.print("Mode changed to:");
     Serial.println(currentMode);
   }
-  //先生用Bボタンはチャタリング防止機能いらない→後日削除
+
   if(digitalRead(BUTTON_PIN_TH_B)) { //先生用ボタンBがHIGHかLOWか検出
-    // 生徒用Cボタンの処理(BがHIGHの時)
+    if(checkButtonPress(button_State_ST,BUTTON_PIN_ST)) {     // 生徒用Cボタンの処理(BがHIGHの時)
+      count_ST++;
+      if(count_ST % 2 == 1){
+      switch (currentMode) {
+        case 0:
+          modeB();
+          delay(50);
+          break;
+        case 1:
+          modeC();
+          delay(50);
+          break;
+        case 2:
+          modeD();
+          delay(50);
+          break;
+        case 3:
+          modeE();
+          delay(50);
+          break;
+      }
+      }else{
+        modeA(); // 生徒用Cボタンが押されていない時は全LEDを消灯
+      }
+
+    }
   }else{
-    // 生徒用Cボタンの処理(BがLOWの時)
+    if(digitalRead(BUTTON_PIN_ST)){// 生徒用Cボタンの処理(BがLOWの時)
+       switch (currentMode) {
+        case 0:
+          modeB();
+          delay(50);
+          break;
+        case 1:
+          modeC();
+          delay(50);
+          break;
+        case 2:
+          modeD();
+          delay(50);
+          break;
+        case 3:
+          modeE();
+          delay(50);
+          break;
+      }
+    }else{
+      modeA(); // 生徒用Cボタンが押されていない時は全LEDを消灯
+    }
   }
 
-  switch (currentMode) {
-    case 0:
-      modeA();
-      delay(50);
-      break;
-    case 1:
-      modeB();
-      delay(50);
-      break;
-    case 2:
-      modeC();
-      delay(50);
-      break;
-    case 3:
-      modeD();
-      delay(50);
-      break;
-    case 4:
-      modeE();
-      delay(50);
-      break;
-  }
+
 
 }

@@ -17,3 +17,6 @@
 - **Port表示**: Resetボタンを二連続で押した後,一定期間のみPortが表示されるので,その際に確認してください
 - **ボード選択**: ボードマネージャー > Arduino AVR Boards > Arduino Leonardo
 - **消費電力**: 明るさMaxでws2812bを光らせると,消費電力が大きすぎて電流が足りなくなる可能性があるので,明るさ制限推奨
+
+## URL
+- [FastLedライブラリ](https://lang-ship.com/blog/work/fastled/)

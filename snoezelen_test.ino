@@ -11,20 +11,17 @@
 CRGB leds[NUM_LEDS]; 
 
 int currentMode = 0;
-int brightness = 5;
+int brightness = 0;
 int fadeAmount = 5;
-int hue = 5;
 int color = random(255);
-int keepColor[NUM_LEDS] = {};
+int setColor[NUM_LEDS] = {};
 int origin = 0;
 int wavelength = 10;
 int direction = 1;
-int fixedColor = random(255);
 int invert = 0;
 int invertBrightness = 205;
-int count = 0;
-int fadeAmountE = 5;
-int defaultBrightness = 155;
+int controlZebraPattern = 0; //ゼブラパターンの制御(二つに分けたグループのうち,どちらを点灯させるか)
+int maxBrightness = 155;
 int count_ST = 0; //生徒用ボタンのカウント(BがHighの時使う)
 
 //Buttonチャタリング防止用
@@ -33,27 +30,27 @@ int count_ST = 0; //生徒用ボタンのカウント(BがHighの時使う)
 const unsigned long debounceDelay = 50;
 
 //先生_生徒用ボタンの値読み取り
-bool button_State_ST = HIGH;
-bool button_State_TH_A = HIGH;
-bool button_State_TH_C = HIGH;
+bool buttonStateSt = HIGH;
+bool buttonStateThA = HIGH;
+bool buttonStateThC = HIGH;
 
-//ModeD用
-int count_D = 0;
+//波の移動速度制御(秒数による制御無理だったのでカウントで制御)
+int  delayWaveMove = 0;
 
-void modeA() {
+void modeBlack() {
   for(int i = 0;i < NUM_LEDS;i++) {
     leds[i] = CRGB::Black;
   }
   FastLED.show();
 }
 
-void modeB() {
-  if(brightness == 0 || brightness == defaultBrightness) {
+void modeMonochroFade() {
+  if(brightness == 0 || brightness == maxBrightness) {
     if(brightness == 0 && fadeAmount < 0){
     fadeAmount *= -1;
     color = random(255);
     }
-    if(brightness == defaultBrightness && fadeAmount > 0){
+    if(brightness == maxBrightness && fadeAmount > 0){
     fadeAmount *= -1;
     }
   }
@@ -66,83 +63,74 @@ void modeB() {
   FastLED.show();
 }
 
-void modeC() {
-  if(brightness == 0 || brightness == defaultBrightness) {
-    if(brightness == 0 && fadeAmount < 0)
-    fadeAmount *= -1;
-    if(brightness == defaultBrightness && fadeAmount > 0)
-    fadeAmount *= -1;
-    if(brightness == 0){
-    for(int i = 0;i < NUM_LEDS;i++) {
-      int j = random(255);
-      leds[i] = CHSV(j, 255, brightness);
-      keepColor[i] = j;
+void modeMultipleFade() {
+  if(brightness == 0 || brightness == maxBrightness) {
+    if(brightness == 0 && fadeAmount < 0){
+      fadeAmount *= -1;
+      for(int i = 0;i < NUM_LEDS;i++) {
+      setColor[i] = random(255);
       }
     }
+    if(brightness == maxBrightness && fadeAmount > 0)
+      fadeAmount *= -1;
   }
 
   for(int i = 0;i < NUM_LEDS;i++){
-    leds[i] = CHSV(keepColor[i], 255, brightness);
+    leds[i] = CHSV(setColor[i], 255, brightness);
   }
   brightness += fadeAmount;
   FastLED.show();
 }
 
 
-void modeD() {
+void modeWaveMove() {
 
   if(origin >= NUM_LEDS){
     direction = -1;
-    fixedColor = random(255);
+    color = random(255);
   }else if(origin <= -wavelength){
     direction = 1;
-    fixedColor = random(255);
+    color = random(255);
   }
   for(int i = 0;i < NUM_LEDS;i++) {
     if(i >= origin && i <= origin + wavelength)
-    leds[i] = CHSV(fixedColor,255,defaultBrightness);
+    leds[i] = CHSV(color,255,maxBrightness);
     else {
     leds[i] = CHSV(1,1,0);
     }
   }
-  if(++count_D % 2 == 0){
+  if(++ delayWaveMove % 3 == 0){
     origin += direction;
   }
-  
-  //ここにdelay入れたら遅くなる?
   FastLED.show();
 
 }
 
-void modeE() {
+void modeZebraPattern() {
   int groupNum = 5;
-  if(brightness == 0 || brightness == defaultBrightness) {
-    if(brightness == 0 && fadeAmountE < 0){
-    fadeAmountE *= -1;
+  if(brightness == 0 || brightness == maxBrightness) {
+    if(brightness == 0 && fadeAmount < 0){
+    fadeAmount *= -1;
     color = random(255);
-    count = (count + 1) % 2;
+    controlZebraPattern =  (controlZebraPattern + 1) % 2;
     }
-    if(brightness == defaultBrightness && fadeAmountE > 0){
-    fadeAmountE *= -1;
+    if(brightness == maxBrightness && fadeAmount > 0){
+    fadeAmount *= -1;
     }
   }
 
   for(int i = 0;i < NUM_LEDS;i++) {
     if((i % 10) >= 5){
-      leds[i] = CHSV(color, 255, count * brightness);
+      leds[i] = CHSV(color, 255, controlZebraPattern * brightness);
     }
     else if((i % 10) < 5){
-    leds[i] = CHSV(color, 255, (1 - count) * brightness);
+      leds[i] = CHSV(color, 255, (1 - controlZebraPattern) * brightness);
     }
   }
 
-  brightness += fadeAmountE;
+  brightness += fadeAmount;
   FastLED.show();
 }
-
-
-
-
 
 bool checkButtonPress(bool buttonState,int buttonPin) {
   unsigned long lastDebounceTime = 0;
@@ -174,15 +162,11 @@ void setup() {
   pinMode(BUTTON_PIN_ST, INPUT_PULLUP);
   pinMode(BUTTON_PIN_TH_A,INPUT_PULLUP);
   pinMode(BUTTON_PIN_TH_B,INPUT_PULLUP);
-  for(int i = 0;i < NUM_LEDS;i++) {
-    keepColor[i] = random(255);
-  }
-
-  modeA();
+  modeBlack();
 }
 
 void loop() {
-  if (checkButtonPress(button_State_TH_A, BUTTON_PIN_TH_A)) { //先生用ボタンAが押され→mode変更
+  if (checkButtonPress(buttonStateThA, BUTTON_PIN_TH_A)) { //先生用ボタンAが押され→mode変更
     currentMode = (currentMode + 1) % 5;
     brightness = 0;
     Serial.print("Mode changed to:");
@@ -190,29 +174,29 @@ void loop() {
   }
 
   if(digitalRead(BUTTON_PIN_TH_B)) { //先生用ボタンBがHIGHかLOWか検出
-    if(checkButtonPress(button_State_ST,BUTTON_PIN_ST)) {     // 生徒用Cボタンの処理(BがHIGHの時)
+    if(checkButtonPress(buttonStateSt,BUTTON_PIN_ST)) {     // 生徒用Cボタンの処理(BがHIGHの時)
       count_ST++;
       if(count_ST % 2 == 1){
       switch (currentMode) {
         case 0:
-          modeB();
+          modeMonochroFade();
           delay(50);
           break;
         case 1:
-          modeC();
+          modeMultipleFade();
           delay(50);
           break;
         case 2:
-          modeD();
+          modeWaveMove();
           delay(50);
           break;
         case 3:
-          modeE();
+          modeZebraPattern();
           delay(50);
           break;
       }
       }else{
-        modeA(); // 生徒用Cボタンが押されていない時は全LEDを消灯
+        modeBlack(); // 生徒用Cボタンが押されていない時は全LEDを消灯
       }
 
     }
@@ -220,24 +204,24 @@ void loop() {
     if(digitalRead(BUTTON_PIN_ST)){// 生徒用Cボタンの処理(BがLOWの時)
        switch (currentMode) {
         case 0:
-          modeB();
+          modeMonochroFade();
           delay(50);
           break;
         case 1:
-          modeC();
+          modeMultipleFade();
           delay(50);
           break;
         case 2:
-          modeD();
+          modeWaveMove();
           delay(50);
           break;
         case 3:
-          modeE();
+          modeZebraPattern();
           delay(50);
           break;
       }
     }else{
-      modeA(); // 生徒用Cボタンが押されていない時は全LEDを消灯
+      modeBlack(); // 生徒用Cボタンが押されていない時は全LEDを消灯
     }
   }
 

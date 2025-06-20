@@ -10,6 +10,15 @@
 - 基盤(自作)
 - その他(傘,同線,スイッチなど)
 
+## ポート番号
+| DEVICE | PORT |
+----|----
+| ws2812b | 7 |
+| student_sw | 9 |
+| teacher_sw_A | 6 |
+| teacher_sw_B | 4 |
+
+
 
 ## 注意点
 - **Leonardoへの書き込み**: Leonardoへの書き込みの際は,Resetボタンを二回連続で押さないとPortが認識されないので注意が必要です

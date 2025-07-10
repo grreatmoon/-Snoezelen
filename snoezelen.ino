@@ -33,14 +33,14 @@ const unsigned long debounceDelay = 50;
 //test
 int count_D = 0;
 
-void modeA() {
+void modeBlack() {
   for(int i = 0;i < NUM_LEDS;i++) {
     leds[i] = CRGB::Black;
   }
   FastLED.show();
 }
 
-void modeB() {
+void modeRandomFade() {
   if(brightness == 0 || brightness == defaultBrightness) {
     if(brightness == 0 && fadeAmount < 0){
     fadeAmount *= -1;
@@ -170,7 +170,7 @@ void setup() {
   }
   pinMode(CONFIRMLED, OUTPUT);
 
-  modeA();
+  modeBlack();
 }
 
 void loop() {
@@ -190,11 +190,11 @@ void loop() {
 
   switch (currentMode) {
     case 0:
-      modeA();
+      modeBlack();
       delay(50);
       break;
     case 1:
-      modeB();
+      modeRandomFade();
       delay(50);
       break;
     case 2:

@@ -10,10 +10,6 @@
 
 CRGB leds[NUM_LEDS]; 
 
-// unsigned long lastDebounceTime_TH_A = 0;
-// unsigned long lastDebounceTime_ST_C = 0;
-
-
 int currentMode = 0;
 int brightness = 0;
 int fadeAmount = 5;
@@ -26,17 +22,21 @@ int invert = 0;
 int invertBrightness = 205;
 int controlZebraPattern = 0; //ゼブラパターンの制御(二つに分けたグループのうち,どちらを点灯させるか)
 int maxBrightness = 155;
-int count_ST = 0; //生徒用ボタンのカウント(BがHighの時使う)
+int count_ST = 0; //生徒用ボタンのカウント(BがHighの時使う)]
 
-//Buttonチャタリング防止用
-// bool lastButtonState = HIGH;  //直前のボタンのそのままの読み取り結果
-// bool buttonState = HIGH;      //チャタリング防止後の確定したボタンの状態
-// const unsigned long debounceDelay = 50;
+//modeAllRandom
+int point;
 
 //先生_生徒用ボタンの値読み取り
 bool buttonStateSt = HIGH;
 bool buttonStateThA = HIGH;
 bool buttonStateThC = HIGH;
+//生徒用ボタンC記憶用
+int buttonStateStFlag = 0;
+bool buttonLastStateSt = HIGH;
+bool buttonLastStateThA = HIGH;
+bool stateHolderST;
+bool stateHolderThA;
 
 //波の移動速度制御(秒数による制御無理だったのでカウントで制御)
 int  delayWaveMove = 0;
@@ -85,7 +85,6 @@ void modeMultipleFade() {
   brightness += fadeAmount;
   FastLED.show();
 }
-
 
 void modeWaveMove() {
 
@@ -136,28 +135,49 @@ void modeZebraPattern() {
   FastLED.show();
 }
 
-// bool checkButtonPress(bool &buttonState,int buttonPin,unsigned long &lastDebounceTime) {
-//   bool buttonPressed = false;
-//   int reading = digitalRead(buttonPin);
+void modeRed() {
+  if(brightness == 0 || brightness == maxBrightness) {
+    if(brightness == 0 && fadeAmount < 0){
+    fadeAmount *= -1;
+    }
+    if(brightness == maxBrightness && fadeAmount > 0){
+    fadeAmount *= -1;
+    }
+  }
 
-//   //チャタリング防止
-//   if (reading != buttonState) {
-//     lastDebounceTime = millis();  
-//   }
+  for(int i = 0;i < NUM_LEDS;i++) {
+    //0→赤
+    leds[i] = CHSV(0, 255, brightness);
+  }
 
-//   if ((millis() - lastDebounceTime) > debounceDelay) {  //前回のボタン押下時からの経過時間がdebounceDelay以上だったら…
-//     if (reading != buttonState) {  //現在のボタンの状態が、前回記録されたボタンの状態と異なったら…
-//       buttonState = reading;
-//       if (buttonState == LOW) {  //ボタンが押されたら -> pullUPスイッチのため"=LOW"
-//         buttonPressed = true;
-//       }
-//     }
-//   }
+  brightness += fadeAmount;
+  FastLED.show();
+}
 
+void modeAllRandom() {
+  int groupNum = 5;
+  if(brightness == 0 || brightness == maxBrightness) {
+    if(brightness == 0 && fadeAmount < 0){
+    fadeAmount *= -1;
+    color = random(255);
+    point = random(255-groupNum);
+    }
+    if(brightness == maxBrightness && fadeAmount > 0){
+    fadeAmount *= -1;
+    }
+  }
 
-//   return buttonPressed;
-// }
+  for(int i = 0;i < NUM_LEDS;i++) {
+    if(i >= point && i < point+5){
+      leds[i] = CHSV(color, point, brightness);
+    }else{
+      leds[i] = CRGB::Black;
+    }
+  }
 
+  brightness += fadeAmount;
+  FastLED.show();
+}
 
 void setup() {
   Serial.begin(9600);
@@ -169,67 +189,87 @@ void setup() {
 }
 
 void loop() {
-  // if (checkButtonPress(buttonStateThA, BUTTON_PIN_TH_A, lastDebounceTime_TH_A)) { //先生用ボタンAが押され→mode変更
-  if(digitalRead(BUTTON_PIN_TH_A) == LOW) { //先生用ボタンAが押された時
-    currentMode = (currentMode + 1) % 5;
+
+  stateHolderThA = digitalRead(BUTTON_PIN_TH_A);
+  if(stateHolderThA == LOW && buttonLastStateThA == HIGH) { //先生用ボタンAが押された時
+    currentMode = (currentMode + 1) % 6;
+    if(currentMode == 1){
+      brightness = 0;
+      fadeAmount = -5;
+    }
     brightness = 0;
     Serial.print("Mode changed to:");
     Serial.println(currentMode);
   }
 
   if(digitalRead(BUTTON_PIN_TH_B)) { //先生用ボタンBがHIGHかLOWか検出
-    // if(checkButtonPress(buttonStateSt,BUTTON_PIN_ST, lastDebounceTime_ST_C)) {     // 生徒用Cボタンの処理(BがHIGHの時)
-    if(digitalRead(BUTTON_PIN_ST) == LOW){ // 生徒用Cボタンが押された時
+
+    stateHolderST = digitalRead(BUTTON_PIN_ST);
+    if(stateHolderST == LOW && buttonLastStateSt == HIGH){
       count_ST++;
-      if(count_ST % 2 == 1){
+    }
+    if(count_ST % 2 == 1){ // 生徒用Cボタンが押された時   
       switch (currentMode) {
         case 0:
           modeMonochroFade();
-          // delay(50);
+          delay(50);
           break;
         case 1:
           modeMultipleFade();
-          // delay(50);
+          delay(50);
           break;
         case 2:
           modeWaveMove();
-          // delay(50);
+          delay(50);
           break;
         case 3:
           modeZebraPattern();
-          // delay(50);
+          delay(50);
+          break;
+        case 4:
+          modeRed();
+          delay(50);
+          break;
+        case 5:
+          modeAllRandom();
+          delay(50);
           break;
       }
-      }else{
-        modeBlack(); // 生徒用Cボタンが押されていない時は全LEDを消灯
-      }
-
+    }else{
+    modeBlack(); // 生徒用Cボタンが押されていない時は全LEDを消灯
     }
+    buttonLastStateSt = stateHolderST;
   }else{
     if(digitalRead(BUTTON_PIN_ST)==LOW){// 生徒用Cボタンの処理(BがLOWの時)
        switch (currentMode) {
         case 0:
           modeMonochroFade();
-          // delay(50);
+          delay(50);
           break;
         case 1:
           modeMultipleFade();
-          // delay(50);
+          delay(50);
           break;
         case 2:
           modeWaveMove();
-          // delay(50);
+          delay(50);
           break;
         case 3:
           modeZebraPattern();
-          // delay(50);
+          delay(50);
+          break;
+        case 4:
+          modeRed();
+          delay(50);
+          break;
+        case 5:
+          modeAllRandom();
+          delay(50);
           break;
       }
     }else{
       modeBlack(); // 生徒用Cボタンが押されていない時は全LEDを消灯
     }
   }
-
-
-
+  buttonLastStateThA = stateHolderThA;
 }
